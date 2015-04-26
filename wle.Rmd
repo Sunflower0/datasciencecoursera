@@ -1,0 +1,89 @@
+---
+title: "Model Identification of Weight Lifting Exercises"
+output: html_document
+date: "Apr. 26 2015"
+---
+
+
+### 1. Introduction
+
+This report is to discuss about the method of model fitting based on the Weight Lifting Exercises Dataset ( http://groupware.les.inf.puc-rio.br/har) and the expected out of sample error. The prediction model derived from the training dataset will be used to predict 20 different test cases.  
+
+### 2. Data Description
+
+The data are from accelerometers on the belt, forearm, arm, and dumbbell of 6 participants. The participants were asked to perform barbell lifts correctly and incorrectly in 5 different ways:exactly according to the specification (Class A), throwing the elbows to the front (Class B), lifting the dumbbell only halfway (Class C), lowering the dumbbell only halfway (Class D) and throwing the hips to the front (Class E). To simplify the model identification, we chose a subset of the WLT Dataset which includes the following columns:
+  -(1) Belt sensor: roll_belt, pitch_belt, yaw_belt, total_accel_belt
+  -(2) Arm sensor: roll_arm, pitch_arm, yaw_arm, total_accel_arm
+  -(3) Forearm sensor: roll_forearm, pitch_forearm, yaw_forearm, total_accel_forearm
+  -(4) Dumbbell sensor: roll_dumbbell, pitch_dumbbell, yaw_dumbbell, total_accel_dumbbell
+
+The subset of training data structure is shown here.
+```{r}
+  a <- read.csv("pml-training.csv")
+  nm <- colnames(a)
+  start_with_roll <- nm %in% grep("^roll", nm, value = TRUE)
+	start_with_pitch <- nm %in% grep("^pitch", nm, value = TRUE)
+	start_with_yaw <- nm %in% grep("^yaw", nm, value = TRUE)
+	start_with_total <- nm %in% grep("^total", nm, value = TRUE)
+  select_train <- start_with_roll|start_with_pitch|start_with_yaw|start_with_total
+  a1 <- subset( a, select = select_train)
+  classe <- a$classe
+  training_s <- cbind(a1, classe)
+  str(training_s)
+
+```
+
+The subeset of testing data structure is shown here.
+
+```{r}
+  b <- read.csv("pml-testing.csv")
+  nm <- colnames(b)
+	start_with_roll <- nm %in% grep("^roll", nm, value = TRUE)
+	start_with_pitch <- nm %in% grep("^pitch", nm, value = TRUE)
+	start_with_yaw <- nm %in% grep("^yaw", nm, value = TRUE)
+	start_with_total <- nm %in% grep("^total", nm, value = TRUE)
+	select_test <- start_with_roll|start_with_pitch|start_with_yaw|start_with_total
+	b1 <- subset( b, select = select_test)
+	problem_id <- b$problem_id
+
+	testing_s <- cbind(b1, problem_id)
+  str(testing_s)
+
+```
+
+### 3. Model fitting
+
+We are to use 10-fold cross-validation and random forest for model fitting of WLE training dataset.
+  
+Here is the result of the model fitting.
+```{r}
+  require(caret)
+  ctrl <- trainControl(method = "cv")
+	set.seed(825)
+	modFit <- train(classe~., data=training_s, method="rf", trControl = ctrl)
+	modFit
+
+```
+The best model has an accuracy of 99.17% for mtry = 9.
+
+### 4. Out of sample error
+
+The the summary of final model of the model fitting is here.
+```{r}
+  modFit$finalModel
+
+```
+
+According to the model fitting result, the estimated OOB error rate is 0.69%.
+
+### 5. Prediction of 20 testing cases
+
+The prediction is based on the model modFit. Following is the prediction result of 20 different testing cases.
+
+```{r}
+  Pred <- predict(modFit, testing_s)  
+  Pred
+
+
+```
+
